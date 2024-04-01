@@ -19,5 +19,9 @@ protected:
 
 private:
     Tetris* pGame;
+
+public slots:
+    void update() {QWidget::update();}
+    void gameOver();
 };
 #endif // WIDGET_H

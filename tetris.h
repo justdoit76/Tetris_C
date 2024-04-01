@@ -1,25 +1,30 @@
 #ifndef TETRIS_H
 #define TETRIS_H
 
+#include <QObject>
 #include <QRect>
+#include <thread>
 
 class Block;
-class QWidget;
+class Widget;
 class QPainter;
 class QColor;
 
-class Tetris
+class Tetris : public QObject
 {
+    Q_OBJECT
 public:
-    Tetris(QWidget*);
+    Tetris(Widget*);
     ~Tetris();
 
 private:
     static const int ROW=20, COL=10;
-    QWidget *parent;
+    Widget *parent;
     QRect rect, inrect;
     int size, cx, cy;
     Block *pb;
+    std::thread *pthread;
+    bool run;
 
     std::vector<std::vector<QColor>> cmaps;
     std::vector<std::tuple<int, int>> before;
@@ -34,7 +39,18 @@ private:
     void initBlock();
     void initMap();
     int randInt(int, int);
+    void drawBackground(QPainter*);
+    void drawBlock(QPainter*);
+    bool isOverlapped(int, int);
+    bool blockUpdate();
+    bool isMoveDown();
+    void stackBlock();
+    void removeBlock();
+    void threadFunc();
 
+signals:
+    void updateSignal();
+    void endSignal();
 };
 
 #endif // TETRIS_H

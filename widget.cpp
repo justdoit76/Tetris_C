@@ -36,3 +36,8 @@ void Widget::keyPressEvent(QKeyEvent* e)
     if(pGame)
         pGame->keyDown( e->key() );
 }
+
+void Widget::gameOver()
+{
+
+}
