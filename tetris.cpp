@@ -11,7 +11,7 @@ Tetris::Tetris(Widget* p) : QObject(), parent(p), pb(nullptr), pthread(nullptr),
 {
     //signals
     connect(this, &Tetris::updateSignal, p, &Widget::update);
-
+    connect(this, &Tetris::endSignal, p, &Widget::gameOver);
 
     rect = inrect = p->rect();
     const int gap = 20;
@@ -27,6 +27,7 @@ Tetris::Tetris(Widget* p) : QObject(), parent(p), pb(nullptr), pthread(nullptr),
 
 Tetris::~Tetris()
 {
+    run = false;
     if(pthread)
     {
         if(pthread->joinable())
@@ -123,7 +124,7 @@ void Tetris::drawBlock(QPainter* p)
     {
         for(int c=0; c<COL; c++)
         {
-            if (maps[r][c]==0)
+            if (maps[r][c]!=0)
             {
                 if(maps[r][c]==1)
                 {
@@ -151,27 +152,53 @@ void Tetris::drawBlock(QPainter* p)
 
 void Tetris::keyDown(int key)
 {
+    mtx.lock();
+    auto [U, D, L, R] = pb->findTail();
+
     switch(key)
     {
     case Qt::Key_Left:
+        if (cx>0-L && isOverlapped(cx-1, cy)==false)
+        {
+            cx-=1;
+        }
         break;
     case Qt::Key_Right:
+        if(cx<COL-1-R && isOverlapped(cx+1, cy)==false)
+        {
+            cx+=1;
+        }
         break;
     case Qt::Key_Up:
+        {
+        pb->rotate_r();
+        auto [U, D, L, R] = pb->findTail();
+        if( (cx<0-L || cx>COL-1-R) || isOverlapped(cx, cy))
+            pb->rotate_l();
         break;
-    case Qt::Key_Down:
+        }
+    case Qt::Key_Down:        
+        if(cy-D < ROW-2)
+            cy+=1;
         break;
     }
+    blockUpdate();
+    mtx.unlock();
+    emit updateSignal();
 }
 
 bool Tetris::isOverlapped(int x, int y)
 {
+    if(y<Block::SIZE)
+        return false;
+
     auto [U, D, L, R] = pb->findTail();
     auto bl = pb->getArr();
+
     for(int r=U; r<D+1; r++)
-        for(int c=L; c<R+1; c++)
-            if(bl[r][c] and maps[y-r-1][c+x]==2)
-                return true;
+        for(int c=L; c<R+1; c++)            
+                if(bl[r][c] && maps[y-r-1][c+x]==2)
+                    return true;
     return false;
 }
 
@@ -196,7 +223,7 @@ bool Tetris::blockUpdate()
             {
                 if(cy-r>=0)
                 {
-                    maps[cy-r][c+cy] = 1;
+                    maps[cy-r][c+cx] = 1;
                     // remember current blocks
                     before.push_back(std::make_tuple(cy-r, c+cx));
                 }
@@ -209,7 +236,7 @@ bool Tetris::blockUpdate()
     {
         if(cy<=1)
         {
-            emit ( updateSignal() );
+            emit updateSignal();
             return false;
         }
 
@@ -217,7 +244,7 @@ bool Tetris::blockUpdate()
         removeBlock();
         initBlock();
     }
-    emit ( updateSignal() );
+    emit updateSignal();
     return true;
 }
 
@@ -317,11 +344,15 @@ void Tetris::threadFunc()
 {
     while(run)
     {
+        mtx.lock();
         cy+=1;
         if(!blockUpdate())
         {
+            emit endSignal();
+            mtx.unlock();
             break;
         }
+        mtx.unlock();
         std::this_thread::sleep_for( std::chrono::milliseconds(500) );
     }
 }

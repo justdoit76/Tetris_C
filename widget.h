@@ -16,6 +16,7 @@ public:
 protected:
     void paintEvent(QPaintEvent*);
     void keyPressEvent(QKeyEvent*);
+    void closeEvent(QCloseEvent *);
 
 private:
     Tetris* pGame;

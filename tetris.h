@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QRect>
 #include <thread>
+#include <mutex>
 
 class Block;
 class Widget;
@@ -25,6 +26,7 @@ private:
     Block *pb;
     std::thread *pthread;
     bool run;
+    std::mutex mtx;
 
     std::vector<std::vector<QColor>> cmaps;
     std::vector<std::tuple<int, int>> before;

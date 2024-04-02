@@ -88,6 +88,7 @@ BI::BI(Btype bt) : Block(bt)
     fill(temp.begin(), temp.end(),  std::vector<bool>(SIZE, false));
     for (int r=0; r<SIZE; r++)
         temp[r][2] = true;
+    arr.push_back(temp);
 }
 
 BS::BS(Btype bt) : Block(bt)
